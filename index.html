@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>RGB Overlay Maker</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background: #222;
+            color: #eee;
+            text-align: center;
+        }
+
+        canvas {
+            background: #111;
+            margin: 10px auto;
+            max-width: 100%;
+            display: block;
+        }
+
+        .dropzone-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+
+        .dropzone {
+            border: 2px dashed #666;
+            border-radius: 10px;
+            padding: 20px;
+            width: 220px;
+            cursor: pointer;
+            background: #333;
+            transition: background 0.2s, border-color 0.2s;
+        }
+
+        .red {
+            border: 2px dashed red;
+        }
+
+        .green {
+            border: 2px dashed green;
+        }
+
+        .blue {
+            border: 2px dashed blue;
+        }
+
+        .dropzone.dragover {
+            background: #444;
+            border-color: #0f0;
+        }
+
+        .dropzone span {
+            display: block;
+            font-size: 0.9em;
+            margin-top: 6px;
+            color: #0f0;
+        }
+
+        input[type=file] {
+            display: none;
+        }
+
+        .info {
+            font-size: 0.9em;
+            margin-top: 6px;
+            color: #aaa;
+        }
+
+        button {
+            margin: 10px;
+            padding: 10px;
+            font-size: 1em;
+        }
+
+        /* Download Buttons */
+        button.download-btn {
+            margin: 10px;
+            padding: 12px 20px;
+            font-size: 1em;
+            border-radius: 8px;
+            cursor: pointer;
+            border: none;
+            background: linear-gradient(145deg, #2196F3, #1e88e5);
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
+            transition: transform 0.1s, box-shadow 0.1s, background 0.2s;
+        }
+
+        button.download-btn:hover:enabled {
+            background: linear-gradient(145deg, #1e88e5, #2196F3);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        button.download-btn:active:enabled {
+            transform: translateY(0);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
+            background: linear-gradient(145deg, #1769aa, #1e88e5);
+        }
+
+        button.download-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Process Button */
+        button.process-btn {
+            margin: 10px;
+            padding: 12px 20px;
+            font-size: 1em;
+            border-radius: 8px;
+            cursor: pointer;
+            border: none;
+            background: linear-gradient(145deg, #4caf50, #45a049);
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
+            transition: transform 0.1s, box-shadow 0.1s, background 0.2s;
+        }
+
+        button.process-btn:hover {
+            background: linear-gradient(145deg, #45a049, #4caf50);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        button.process-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
+            background: linear-gradient(145deg, #3e8e41, #45a049);
+        }
+    </style>
+</head>
+
+<body>
+    <h1>RGB Overlay Maker</h1>
+
+    <p>Add 3 images to overlay. They will be mapped to Red, Green, and Blue</p>
+    <span>All images will be resized to match Image 1. Black/Alpha is treated as background.</span>
+
+    <div class="dropzone-container">
+        <div class="dropzone red" data-input="img1">
+            Image 1 (Red)<br><span id="file1"></span><input type="file" id="img1" accept="image/*">
+            <div id="info1" class="info"></div>
+        </div>
+        <div class="dropzone green" data-input="img2">
+            Image 2 (Green)<br><span id="file2"></span><input type="file" id="img2" accept="image/*">
+            <div id="info2" class="info"></div>
+        </div>
+        <div class="dropzone blue" data-input="img3">
+            Image 3 (Blue)<br><span id="file3"></span><input type="file" id="img3" accept="image/*">
+            <div id="info3" class="info"></div>
+        </div>
+    </div>
+
+    <button class="process-btn" onclick="process()">Process</button>
+    <button class="download-btn" id="downloadAlpha" onclick="download('alpha')" disabled>Download (alpha)</button>
+    <button class="download-btn" id="downloadBlack" onclick="download('black')" disabled>Download (black bg)</button>
+    <button class="download-btn" id="downloadWhite" onclick="download('white')" disabled>Download (white bg)</button>
+
+    <div id="finalInfo" class="info"></div>
+
+    <canvas id="canvas"></canvas>
+    <script>
+        let images = [null, null, null];
+        let final_img_data = null;
+
+        function loadImage(file, idx) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                    document.getElementById("info" + idx).textContent =
+                        `${img.width}×${img.height} px`;
+                    resolve(img);
+                };
+                img.onerror = reject;
+                img.src = URL.createObjectURL(file);
+            });
+        }
+
+        function setupDropzones() {
+            document.querySelectorAll('.dropzone').forEach((zone, i) => {
+                const input = zone.querySelector("input[type=file]");
+                const filename = zone.querySelector("span");
+                const info = zone.querySelector(".info");
+
+                zone.addEventListener("click", () => input.click());
+
+                zone.addEventListener("dragover", e => {
+                    e.preventDefault();
+                    zone.classList.add("dragover");
+                });
+
+                zone.addEventListener("dragleave", () => zone.classList.remove("dragover"));
+
+                zone.addEventListener("drop", async e => {
+                    e.preventDefault();
+                    zone.classList.remove("dragover");
+                    if (e.dataTransfer.files.length > 0) {
+                        input.files = e.dataTransfer.files;
+                        filename.textContent = "✔ " + e.dataTransfer.files[0].name;
+                        images[i] = await loadImage(e.dataTransfer.files[0], i + 1);
+                    }
+                });
+
+                input.addEventListener("change", async () => {
+                    if (input.files.length > 0) {
+                        filename.textContent = "✔ " + input.files[0].name;
+                        images[i] = await loadImage(input.files[0], i + 1);
+                    }
+                });
+
+            });
+        }
+
+        async function process() {
+            for (let i = 0; i < 3; i++) {
+                if (!images[i]) return alert("Please select all 3 images");
+            }
+
+            const w = images[0].width, h = images[0].height;
+            const canvas = document.getElementById("canvas");
+            canvas.width = w; canvas.height = h;
+            const ctx = canvas.getContext("2d");
+
+            final_img_data = ctx.createImageData(w, h);
+            let f_data = final_img_data.data;
+
+            for (let idx = 0; idx < 3; idx++) {
+                // 0 Red
+                // 1 Green
+                // 2 Blue
+
+                const off = document.createElement("canvas");
+                off.width = w; off.height = h;
+                const octx = off.getContext("2d");
+                octx.drawImage(images[idx], 0, 0, w, h);
+                let data = octx.getImageData(0, 0, w, h).data;
+
+                for (let i=0; i<data.length; i+=4) {
+                    let mod_val = (data[i] + data[i+1] + data[i+2]) / 3;
+                    let alpha = mod_val / 255;
+                    alpha = Math.pow(alpha, 0.8);
+
+                    let r=0,g=0,b=0;
+                    if (idx==0) r = mod_val;
+                    else if (idx==1) g = mod_val;
+                    else if (idx==2) b = mod_val;
+
+                    // lighten blend
+                    if (r > f_data[i]) f_data[i] = r;
+                    if (g > f_data[i+1]) f_data[i+1] = g;
+                    if (b > f_data[i+2]) f_data[i+2] = b;
+
+                    f_data[i+3] = Math.max(f_data[i+3], alpha*255);
+                }
+            }
+
+            ctx.putImageData(final_img_data, 0, 0);
+
+            document.getElementById("downloadBlack").disabled = false;
+            document.getElementById("downloadAlpha").disabled = false;
+            document.getElementById("downloadWhite").disabled = false;
+
+            document.getElementById("finalInfo").textContent =
+                `Final image: ${w}×${h} px`;
+            _paq.push(['trackEvent', 'rgb-overlay', 'button-click', 'process']);
+        }
+
+        function download(fill) {
+            if (!final_img_data) return;
+
+            const w = final_img_data.width;
+            const h = final_img_data.height;
+
+            const export_canvas = document.createElement("canvas");
+            export_canvas.width = w;
+            export_canvas.height = h;
+            const exportCtx = export_canvas.getContext("2d");
+
+            if (fill === 'black') {
+                exportCtx.fillStyle = "black";
+                exportCtx.fillRect(0, 0, w, h);
+            } else if (fill === 'white') {
+                exportCtx.fillStyle = "white";
+                exportCtx.fillRect(0, 0, w, h);
+            }
+
+            const previewCanvas = document.getElementById("canvas");
+            exportCtx.drawImage(previewCanvas, 0, 0);
+
+            // download
+            const link = document.createElement("a");
+            link.download = fill === 'black' ? "rgb_overlay_black.png" :
+                fill === 'white' ? "rgb_overlay_white.png" :
+                    "rgb_overlay_alpha.png";
+            link.href = export_canvas.toDataURL("image/png");
+            link.click();
+            _paq.push(['trackEvent', 'rgb-overlay', 'button-click', 'download-'+fill]);
+        }
+
+        setupDropzones();
+
+    </script>
+
+    <footer style="
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background: #111;
+        color: #ccc;
+        padding: 10px 0;
+        text-align: center;
+        font-size: 0.9em;
+        box-shadow: 0 -2px 5px rgba(0,0,0,0.5);
+        z-index: 1000;
+    ">
+        <a href="https://github.com/WolfwithSword/RGB-Overlay-Maker" target="_blank"
+            style="color:#1e90ff; margin:0 10px; text-decoration:none;">Source Code</a> |
+
+            <!-- TODO -->
+        <a href="https://wolfwithsword.com" target="_blank"
+            style="color:#1e90ff; margin:0 10px; text-decoration:none;">Example Project (WIP)</a> |
+
+        <a href="https://www.carnovsky.com/RGB.htm" target="_blank" 
+           style="color:#1e90ff; margin:0 10px; text-decoration:none;">Learn More</a> |
+
+        <a href="https://links.wolfwithsword.com/" target="_blank" 
+           style="color:#1e90ff; margin:0 10px; text-decoration:none;">My Links</a> |
+
+        <button onclick="window.open('https://ko-fi.com/wolfwithsword','_blank')" 
+                style="
+                    margin-left: 10px;
+                    padding:5px 12px;
+                    font-size:0.9em;
+                    border-radius:6px;
+                    border:none;
+                    background: linear-gradient(145deg, #2196F3, #1e88e5);
+                    color:white;
+                    cursor:pointer;
+                    font-weight:600;
+                    transition: transform 0.1s, box-shadow 0.1s, background 0.2s;
+                    " 
+                onmouseover="this.style.background='linear-gradient(145deg, #1e88e5, #2196F3)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 10px rgba(0,0,0,0.5)';"
+                onmouseout="this.style.background='linear-gradient(145deg, #2196F3, #1e88e5)'; this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 6px rgba(0,0,0,0.4)';">Support
+            Me</button>
+
+        <div style="font-size:0.75em; color:#888; margin-top:4px; margin-bottom:2px;">All images are processed
+            client-side only.<br>No image data is sent to any server.<br>Only visit and usage counts are anonymously logged
+            for analytics.</div>
+
+    </footer>
+
+    <!-- Matomo -->
+    <script>
+        var _paq = window._paq = window._paq || [];
+        _paq.push(['trackPageView']);
+        _paq.push(['enableLinkTracking']);
+        (function() {
+            var u="https://matomo.wolfwithsword.com/";
+            _paq.push(['setTrackerUrl', u+'matomo.php']);
+            _paq.push(['setSiteId', '3']);
+            var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+            g.async=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);
+        })();
+    </script>
+    <!-- End Matomo Code -->
+</body>
+
+</html>

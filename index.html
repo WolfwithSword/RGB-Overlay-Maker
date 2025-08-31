@@ -12,6 +12,33 @@
             text-align: center;
         }
 
+        footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: #111;
+            color: #ccc;
+            padding: 10px 0;
+            text-align: center;
+            font-size: 0.9em;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        footer > a {
+            color:#1e90ff;
+            margin:0 10px; 
+            text-decoration:none;
+        }
+
+        footer > div {
+            font-size:0.75em;
+            color:#888;
+            margin-top:4px;
+            margin-bottom:2px;
+        }
+
         canvas {
             background: #111;
             margin: 10px auto;
@@ -75,6 +102,19 @@
             margin: 10px;
             padding: 10px;
             font-size: 1em;
+        }
+
+        button.support-btn {
+            margin-left: 10px;
+            padding:5px 12px;
+            font-size:0.9em;
+            border-radius:6px;
+            border:none;
+            background: linear-gradient(145deg, #2196F3, #1e88e5);
+            color:white;
+            cursor:pointer;
+            font-weight:600;
+            transition: transform 0.1s, box-shadow 0.1s, background 0.2s;
         }
 
         /* Download Buttons */
@@ -310,52 +350,25 @@
 
     </script>
 
-    <footer style="
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        background: #111;
-        color: #ccc;
-        padding: 10px 0;
-        text-align: center;
-        font-size: 0.9em;
-        box-shadow: 0 -2px 5px rgba(0,0,0,0.5);
-        z-index: 1000;
-    ">
-        <a href="https://github.com/WolfwithSword/RGB-Overlay-Maker" target="_blank"
-            style="color:#1e90ff; margin:0 10px; text-decoration:none;">Source Code</a> |
+    <footer>
+        <a href="https://github.com/WolfwithSword/RGB-Overlay-Maker" target="_blank">Source Code</a> |
 
             <!-- TODO -->
-        <a href="https://wolfwithsword.com" target="_blank"
-            style="color:#1e90ff; margin:0 10px; text-decoration:none;">Example Project (WIP)</a> |
+        <a href="https://wolfwithsword.com" target="_blank">Example Project (WIP)</a> |
 
-        <a href="https://www.carnovsky.com/RGB.htm" target="_blank" 
-           style="color:#1e90ff; margin:0 10px; text-decoration:none;">Learn More</a> |
+        <a href="https://www.carnovsky.com/RGB.htm" target="_blank">Learn More</a> |
 
-        <a href="https://links.wolfwithsword.com/" target="_blank" 
-           style="color:#1e90ff; margin:0 10px; text-decoration:none;">My Links</a> |
+        <a href="https://links.wolfwithsword.com/" target="_blank">My Links</a> |
 
-        <button onclick="window.open('https://ko-fi.com/wolfwithsword','_blank')" 
-                style="
-                    margin-left: 10px;
-                    padding:5px 12px;
-                    font-size:0.9em;
-                    border-radius:6px;
-                    border:none;
-                    background: linear-gradient(145deg, #2196F3, #1e88e5);
-                    color:white;
-                    cursor:pointer;
-                    font-weight:600;
-                    transition: transform 0.1s, box-shadow 0.1s, background 0.2s;
-                    " 
+        <button class="support-btn" onclick="window.open('https://ko-fi.com/wolfwithsword','_blank')" 
                 onmouseover="this.style.background='linear-gradient(145deg, #1e88e5, #2196F3)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 10px rgba(0,0,0,0.5)';"
-                onmouseout="this.style.background='linear-gradient(145deg, #2196F3, #1e88e5)'; this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 6px rgba(0,0,0,0.4)';">Support
-            Me</button>
+                onmouseout="this.style.background='linear-gradient(145deg, #2196F3, #1e88e5)'; this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 6px rgba(0,0,0,0.4)';">Support Me
+        </button>
 
-        <div style="font-size:0.75em; color:#888; margin-top:4px; margin-bottom:2px;">All images are processed
+        <div>All images are processed
             client-side only.<br>No image data is sent to any server.<br>Only visit and usage counts are anonymously logged
-            for analytics.</div>
+            for analytics.
+        </div>
 
     </footer>
 
